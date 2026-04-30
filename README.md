@@ -1,40 +1,58 @@
 # 📱🔵 Controle de Arduino via Bluetooth (Flutter + HC-05)
 
-Projeto de aplicativo mobile desenvolvido em **Flutter** para controlar um **Arduino UNO** via **Bluetooth (HC-05)**.
+Aplicativo mobile desenvolvido em **Flutter** para controlar um **Arduino UNO** via **Bluetooth clássico (HC-05)**.
 
-Permite ligar e desligar dispositivos (LED, relé, motor, etc.) através de botões personalizados no app.
+O projeto utiliza **integração nativa Android (Kotlin)** com `MethodChannel`, sem dependência de plugins Bluetooth desatualizados.
 
 ---
 
 ## 🚀 Funcionalidades
 
-* 🔗 Conexão com módulo Bluetooth (HC-05 / HC-06)
-* 🔘 Botão **LIGAR**
-* 🔘 Botão **DESLIGAR**
-* 📡 Envio de comandos via serial (`"1"` e `"0"`)
-* 🎨 Interface simples e personalizável
+* 🔍 Lista de dispositivos Bluetooth pareados
+* 🔗 Conexão dinâmica (sem MAC fixo)
+* 🔘 Botões **LIGAR / DESLIGAR**
+* 📡 Envio de comandos (`"1"` e `"0"`)
+* 🎛️ Interface moderna estilo painel
+* 💬 Feedback visual (status de conexão)
 
 ---
 
 ## 🧱 Tecnologias Utilizadas
 
 * Flutter (Dart)
+* Kotlin (Android nativo)
 * Arduino (C++)
-* Bluetooth Serial (HC-05)
+* Bluetooth clássico (HC-05)
+
+---
+
+## ⚙️ Arquitetura
+
+```
+Flutter (UI)
+   ↓
+MethodChannel
+   ↓
+Kotlin (Bluetooth)
+   ↓
+HC-05
+   ↓
+Arduino
+```
 
 ---
 
 ## 📦 Dependências Flutter
 
-Adicione no `pubspec.yaml`:
-
 ```yaml
 dependencies:
   flutter:
     sdk: flutter
-  flutter_bluetooth_serial: ^0.4.0
-  permission_handler: ^11.0.0
+
+  cupertino_icons: ^1.0.8
 ```
+
+> ❗ O Bluetooth é implementado via código nativo (Kotlin)
 
 ---
 
@@ -49,8 +67,6 @@ Arquivo: `android/app/src/main/AndroidManifest.xml`
 <!-- Android 12+ -->
 <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
-
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 ```
 
 ---
@@ -58,17 +74,15 @@ Arquivo: `android/app/src/main/AndroidManifest.xml`
 ## 📱 Código Flutter (resumo)
 
 ```dart
-void enviar(String comando) {
-  connection!.output.add(Uint8List.fromList(comando.codeUnits));
-}
-```
+static const platform = MethodChannel('bluetooth');
 
-* `"1"` → Ligar
-* `"0"` → Desligar
+await platform.invokeMethod('connect', {"mac": mac});
+await platform.invokeMethod('send', {"data": "1"});
+```
 
 ---
 
-## 🔌 Código Arduino
+## 🤖 Código Arduino
 
 ```cpp
 void setup() {
@@ -88,7 +102,7 @@ void loop() {
 
 ---
 
-## 🔧 Ligações do HC-05
+## 🔌 Ligações do HC-05
 
 | HC-05 | Arduino        |
 | ----- | -------------- |
@@ -103,31 +117,22 @@ void loop() {
 
 ## ⚠️ Importante
 
-* Pareie o HC-05 no celular antes de usar
-* Use o **MAC Address correto**
-* Ative o Bluetooth do celular
-* Conceda permissões no app
+* O HC-05 deve estar **pareado no celular**
+* Bluetooth deve estar ativado
+* Use o MAC selecionando na lista do app
+* Baud rate: **9600**
 
 ---
 
 ## 🧪 Teste
 
 1. Abra o app
-2. Conecte ao HC-05
-3. Pressione:
+2. Selecione o dispositivo (HC-05)
+3. Conecte
+4. Pressione:
 
    * **LIGAR** → LED acende
    * **DESLIGAR** → LED apaga
-
----
-
-## 🎨 Melhorias Futuras
-
-* 🔍 Lista de dispositivos Bluetooth
-* 🎛️ Interface avançada (botões animados)
-* 🌈 Controle RGB
-* 🔐 Sistema de autenticação
-* 📊 Feedback em tempo real
 
 ---
 
@@ -136,7 +141,9 @@ void loop() {
 ```
 lib/
  ├── main.dart
+
 android/
+ ├── MainActivity.kt
  ├── AndroidManifest.xml
 ```
 
@@ -144,7 +151,7 @@ android/
 
 ## 🏁 Conclusão
 
-Este projeto demonstra a comunicação entre um app mobile e um sistema embarcado, sendo uma base sólida para automação residencial, robótica e IoT.
+Este projeto demonstra integração entre Flutter e código nativo Android para comunicação com dispositivos Bluetooth clássicos, sendo uma base sólida para projetos de automação e IoT.
 
 ---
 
