@@ -16,35 +16,27 @@ class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel('bluetooth');
 
   bool conectado = false;
+  List dispositivos = [];
 
-  Future<void> conectar() async {
-    try {
-      await platform.invokeMethod('connect');
-      setState(() => conectado = true);
-      _mensagem("Conectado");
-    } catch (e) {
-      setState(() => conectado = false);
-      _mensagem("Erro ao conectar");
-    }
+  @override
+  void initState() {
+    super.initState();
+    listar();
   }
 
-  Future<void> enviar(String comando) async {
-    if (!conectado) {
-      _mensagem("Conecte primeiro");
-      return;
-    }
-
-    try {
-      await platform.invokeMethod('send', {"data": comando});
-    } catch (e) {
-      _mensagem("Erro ao enviar");
-    }
+  Future<void> listar() async {
+    final res = await platform.invokeMethod('list');
+    setState(() => dispositivos = res);
   }
 
-  void _mensagem(String texto) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(texto)),
-    );
+  Future<void> conectar(String mac) async {
+    await platform.invokeMethod('connect', {"mac": mac});
+    setState(() => conectado = true);
+  }
+
+  Future<void> enviar(String c) async {
+    if (!conectado) return;
+    await platform.invokeMethod('send', {"data": c});
   }
 
   @override
@@ -52,126 +44,70 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: const Color(0xFF0F172A),
-        appBar: AppBar(
-          title: const Text("Painel Arduino"),
-          centerTitle: true,
-          backgroundColor: const Color(0xFF020617),
-        ),
+        backgroundColor: Colors.black,
+        appBar: AppBar(title: const Text("Casa Inteligente")),
         body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
 
-            // 🔵 STATUS
+            // STATUS
             Container(
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: conectado ? Colors.green : Colors.red,
-                borderRadius: BorderRadius.circular(15),
+              padding: const EdgeInsets.all(12),
+              color: conectado ? Colors.green : Colors.red,
+              child: Text(
+                conectado ? "Conectado" : "Desconectado",
+                style: const TextStyle(color: Colors.white),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            ),
+
+            // LISTA
+            Expanded(
+              child: ListView.builder(
+                itemCount: dispositivos.length,
+                itemBuilder: (context, i) {
+                  final d = dispositivos[i];
+                  return ListTile(
+                    title: Text(d['name'], style: TextStyle(color: Colors.white)),
+                    subtitle: Text(d['address'], style: TextStyle(color: Colors.grey)),
+                    onTap: () => conectar(d['address']),
+                  );
+                },
+              ),
+            ),
+
+            // CONTROLES
+            if (conectado)
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
                 children: [
-                  Icon(
-                    conectado ? Icons.check_circle : Icons.error,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    conectado ? "Conectado" : "Desconectado",
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                  ),
+
+                  _btn("Luz ON", Colors.yellow, () => enviar("A")),
+                  _btn("Luz OFF", Colors.orange, () => enviar("B")),
+
+                  _btn("Abrir Porta", Colors.green, () => enviar("C")),
+                  _btn("Fechar Porta", Colors.red, () => enviar("D")),
+
+                  _btn("Alarme ON", Colors.purple, () => enviar("E")),
+                  _btn("Alarme OFF", Colors.deepPurple, () => enviar("F")),
+
+                  _btn("Vermelho", Colors.red, () => enviar("G")),
+                  _btn("Verde", Colors.green, () => enviar("H")),
+                  _btn("Azul", Colors.blue, () => enviar("I")),
+                  _btn("RGB OFF", Colors.grey, () => enviar("Z")),
                 ],
-              ),
-            ),
-
-            // 🔗 BOTÃO CONECTAR
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton.icon(
-                onPressed: conectar,
-                icon: const Icon(Icons.bluetooth),
-                label: const Text("Conectar"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  minimumSize: const Size(double.infinity, 60),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 40),
-
-            // 🎛️ CONTROLE
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _botaoAnimado(
-                  texto: "LIGAR",
-                  cor: Colors.green,
-                  icone: Icons.power,
-                  onTap: () => enviar("1"),
-                ),
-                _botaoAnimado(
-                  texto: "DESLIGAR",
-                  cor: Colors.red,
-                  icone: Icons.power_off,
-                  onTap: () => enviar("0"),
-                ),
-              ],
-            ),
+              )
           ],
         ),
       ),
     );
   }
 
-  Widget _botaoAnimado({
-    required String texto,
-    required Color cor,
-    required IconData icone,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() {}),
-      onTapUp: (_) => setState(() {}),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 140,
-        height: 140,
-        decoration: BoxDecoration(
-          color: cor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: cor.withOpacity(0.6),
-              blurRadius: 25,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icone, size: 50, color: Colors.white),
-              const SizedBox(height: 10),
-              Text(
-                texto,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            ],
-          ),
-        ),
-      ),
+  Widget _btn(String t, Color c, VoidCallback f) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: c),
+      onPressed: f,
+      child: Text(t),
     );
   }
 }

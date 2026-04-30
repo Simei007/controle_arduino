@@ -19,9 +19,7 @@ class MainActivity: FlutterActivity() {
 
                 when (call.method) {
 
-                    "list" -> {
-                        result.success(listarDispositivos())
-                    }
+                    "list" -> result.success(listar())
 
                     "connect" -> {
                         val mac = call.argument<String>("mac")
@@ -40,18 +38,15 @@ class MainActivity: FlutterActivity() {
             }
     }
 
-    private fun listarDispositivos(): List<Map<String, String>> {
+    private fun listar(): List<Map<String, String>> {
         val adapter = BluetoothAdapter.getDefaultAdapter()
-        val devices = adapter.bondedDevices
-
         val lista = mutableListOf<Map<String, String>>()
 
-        for (device in devices) {
-            val item = mapOf(
-                "name" to (device.name ?: "Sem nome"),
-                "address" to device.address
-            )
-            lista.add(item)
+        for (d in adapter.bondedDevices) {
+            lista.add(mapOf(
+                "name" to (d.name ?: "Sem nome"),
+                "address" to d.address
+            ))
         }
 
         return lista

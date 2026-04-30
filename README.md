@@ -1,19 +1,21 @@
-# 📱🔵 Controle de Arduino via Bluetooth (Flutter + HC-05)
+# 🏠📱 Controle de Casa Inteligente (Flutter + Arduino + HC-05)
 
-Aplicativo mobile desenvolvido em **Flutter** para controlar um **Arduino UNO** via **Bluetooth clássico (HC-05)**.
+Aplicativo mobile desenvolvido em **Flutter** para controle de uma **mini casa inteligente com Arduino**, utilizando **Bluetooth clássico (HC-05)**.
 
-O projeto utiliza **integração nativa Android (Kotlin)** com `MethodChannel`, sem dependência de plugins Bluetooth desatualizados.
+O projeto utiliza **integração nativa Android (Kotlin)** via `MethodChannel`, garantindo compatibilidade com versões modernas do Flutter.
 
 ---
 
 ## 🚀 Funcionalidades
 
-* 🔍 Lista de dispositivos Bluetooth pareados
+* 🔍 Listagem de dispositivos Bluetooth pareados
 * 🔗 Conexão dinâmica (sem MAC fixo)
-* 🔘 Botões **LIGAR / DESLIGAR**
-* 📡 Envio de comandos (`"1"` e `"0"`)
-* 🎛️ Interface moderna estilo painel
-* 💬 Feedback visual (status de conexão)
+* 💡 Controle de iluminação (relé)
+* 🚪 Controle de porta (servo motor)
+* 🔔 Sistema de alarme (buzzer)
+* 🌈 Controle de iluminação RGB
+* 🎛️ Interface estilo painel
+* 💬 Status de conexão em tempo real
 
 ---
 
@@ -33,7 +35,7 @@ Flutter (UI)
    ↓
 MethodChannel
    ↓
-Kotlin (Bluetooth)
+Kotlin (Bluetooth clássico)
    ↓
 HC-05
    ↓
@@ -71,68 +73,124 @@ Arquivo: `android/app/src/main/AndroidManifest.xml`
 
 ---
 
-## 📱 Código Flutter (resumo)
+## 📱 Comandos do App
 
-```dart
-static const platform = MethodChannel('bluetooth');
-
-await platform.invokeMethod('connect', {"mac": mac});
-await platform.invokeMethod('send', {"data": "1"});
-```
+| Função       | Comando |
+| ------------ | ------- |
+| Luz ON       | A       |
+| Luz OFF      | B       |
+| Abrir porta  | C       |
+| Fechar porta | D       |
+| Alarme ON    | E       |
+| Alarme OFF   | F       |
+| RGB Vermelho | G       |
+| RGB Verde    | H       |
+| RGB Azul     | I       |
+| RGB OFF      | Z       |
 
 ---
 
 ## 🤖 Código Arduino
 
 ```cpp
+#include <Servo.h>
+
+Servo servo;
+
+#define RELE 7
+#define BUZZER 8
+
+int r = 10;
+int g = 11;
+int b = 12;
+
 void setup() {
   Serial.begin(9600);
-  pinMode(13, OUTPUT);
+
+  pinMode(RELE, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+
+  pinMode(r, OUTPUT);
+  pinMode(g, OUTPUT);
+  pinMode(b, OUTPUT);
+
+  servo.attach(9);
 }
 
 void loop() {
   if (Serial.available()) {
     char c = Serial.read();
 
-    if (c == '1') digitalWrite(13, HIGH);
-    if (c == '0') digitalWrite(13, LOW);
+    switch (c) {
+      case 'A': digitalWrite(RELE, HIGH); break;
+      case 'B': digitalWrite(RELE, LOW); break;
+
+      case 'C': servo.write(90); break;
+      case 'D': servo.write(0); break;
+
+      case 'E': digitalWrite(BUZZER, HIGH); break;
+      case 'F': digitalWrite(BUZZER, LOW); break;
+
+      case 'G': digitalWrite(r, HIGH); break;
+      case 'H': digitalWrite(g, HIGH); break;
+      case 'I': digitalWrite(b, HIGH); break;
+
+      case 'Z':
+        digitalWrite(r, LOW);
+        digitalWrite(g, LOW);
+        digitalWrite(b, LOW);
+        break;
+    }
   }
 }
 ```
 
 ---
 
-## 🔌 Ligações do HC-05
+## 🔌 Ligações
 
-| HC-05 | Arduino        |
-| ----- | -------------- |
-| VCC   | 5V             |
-| GND   | GND            |
-| TX    | RX (pino 0)    |
-| RX    | TX (pino 1) ⚠️ |
-
-> ⚠️ Recomendado usar divisor de tensão no RX do HC-05
+| Componente | Pino Arduino |
+| ---------- | ------------ |
+| Relé       | 7            |
+| Buzzer     | 8            |
+| Servo      | 9            |
+| RGB R      | 10           |
+| RGB G      | 11           |
+| RGB B      | 12           |
 
 ---
 
 ## ⚠️ Importante
 
-* O HC-05 deve estar **pareado no celular**
-* Bluetooth deve estar ativado
-* Use o MAC selecionando na lista do app
-* Baud rate: **9600**
+* Pareie o HC-05 no celular antes de usar
+* Utilize baud rate **9600**
+* Use divisor de tensão no RX do HC-05
+* Cuidado ao usar relé com alta tensão (127V / 220V)
 
 ---
 
-## 🧪 Teste
+## 📦 Build do App
 
-1. Abra o app
-2. Selecione o dispositivo (HC-05)
-3. Conecte
-4. Pressione:
+```bash
+flutter build apk --release
+```
 
-   * **LIGAR** → LED acende
-   * **DESLIGAR** → LED apaga
+APK gerado em:
+
+```
+build/app/outputs/flutter-apk/app-release.apk
+```
+
+---
+
+## 🏷️ Versionamento
+
+```
+version: 1.1.0+2
+```
+
+* 1.1.0 → nova funcionalidade (casa inteligente)
+* +2 → número do build
 
 ---
 
@@ -151,7 +209,13 @@ android/
 
 ## 🏁 Conclusão
 
-Este projeto demonstra integração entre Flutter e código nativo Android para comunicação com dispositivos Bluetooth clássicos, sendo uma base sólida para projetos de automação e IoT.
+Este projeto demonstra integração completa entre:
+
+* Aplicativo mobile
+* Comunicação Bluetooth
+* Sistema embarcado
+
+Servindo como base para projetos de automação residencial, robótica e IoT.
 
 ---
 
